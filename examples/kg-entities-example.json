@@ -1,0 +1,168 @@
+{
+  "entities": [
+    {
+      "id": "ent_project_memory_platform",
+      "name": "Memory Platform",
+      "entityType": "project",
+      "summary": "Core initiative to add persistent memory layers to a multi-agent system.",
+      "confidence": "high",
+      "tags": ["memory", "architecture"],
+      "source": "memory:2026-03-27"
+    },
+    {
+      "id": "ent_agent_ops",
+      "name": "agent_ops",
+      "entityType": "person",
+      "summary": "Operations agent focused on task routing, triage, and coordination.",
+      "confidence": "high",
+      "tags": ["operations", "triage"],
+      "source": "memory:2026-03-27"
+    },
+    {
+      "id": "ent_agent_eng",
+      "name": "agent_eng",
+      "entityType": "person",
+      "summary": "Engineering agent maintaining runtime planner and retrieval behavior.",
+      "confidence": "high",
+      "tags": ["engineering", "runtime"],
+      "source": "memory:2026-03-27"
+    },
+    {
+      "id": "ent_retrieval_cascade",
+      "name": "Retrieval Cascade",
+      "entityType": "concept",
+      "summary": "Six-step memory lookup strategy used to optimize relevance and latency.",
+      "confidence": "high",
+      "tags": ["retrieval", "policy"],
+      "source": "memory:2026-03-27"
+    },
+    {
+      "id": "ent_blackboard",
+      "name": "Operational Blackboard",
+      "entityType": "tool",
+      "summary": "Structured state store for tasks, messages, and decisions.",
+      "confidence": "high",
+      "tags": ["operations", "state"],
+      "source": "memory:2026-03-26"
+    },
+    {
+      "id": "ent_kg",
+      "name": "Knowledge Graph",
+      "entityType": "tool",
+      "summary": "Long-term store for durable entities and relationships.",
+      "confidence": "high",
+      "tags": ["knowledge", "graph"],
+      "source": "memory:2026-03-26"
+    },
+    {
+      "id": "ent_weekly_consolidation",
+      "name": "Weekly Consolidation",
+      "entityType": "concept",
+      "summary": "Scheduled process that converts memory logs into durable knowledge.",
+      "confidence": "high",
+      "tags": ["consolidation", "maintenance"],
+      "source": "memory:2026-03-23"
+    }
+  ],
+  "relations": [
+    {
+      "fromEntity": "Memory Platform",
+      "toEntity": "Retrieval Cascade",
+      "relationType": "implements",
+      "fact": "Memory Platform implements the Retrieval Cascade as its default lookup policy.",
+      "weight": 9,
+      "confidence": "high",
+      "source": "memory:2026-03-27"
+    },
+    {
+      "fromEntity": "Memory Platform",
+      "toEntity": "Operational Blackboard",
+      "relationType": "uses",
+      "fact": "Memory Platform uses the Operational Blackboard for active task and message state.",
+      "weight": 8,
+      "confidence": "high",
+      "source": "memory:2026-03-26"
+    },
+    {
+      "fromEntity": "Memory Platform",
+      "toEntity": "Knowledge Graph",
+      "relationType": "uses",
+      "fact": "Memory Platform uses the Knowledge Graph for durable facts and relationships.",
+      "weight": 8,
+      "confidence": "high",
+      "source": "memory:2026-03-26"
+    },
+    {
+      "fromEntity": "Weekly Consolidation",
+      "toEntity": "Knowledge Graph",
+      "relationType": "updates",
+      "fact": "Weekly Consolidation updates the Knowledge Graph with extracted permanent facts.",
+      "weight": 9,
+      "confidence": "high",
+      "source": "memory:2026-03-23"
+    },
+    {
+      "fromEntity": "agent_eng",
+      "toEntity": "Memory Platform",
+      "relationType": "implements",
+      "fact": "agent_eng implemented retrieval policy enforcement in the Memory Platform.",
+      "weight": 7,
+      "confidence": "high",
+      "source": "memory:2026-03-27"
+    },
+    {
+      "fromEntity": "agent_ops",
+      "toEntity": "Memory Platform",
+      "relationType": "supports",
+      "fact": "agent_ops supports Memory Platform operations through triage and routing.",
+      "weight": 6,
+      "confidence": "medium",
+      "source": "memory:2026-03-27"
+    },
+    {
+      "fromEntity": "agent_ops",
+      "toEntity": "Weekly Consolidation",
+      "relationType": "coordinates",
+      "fact": "agent_ops coordinates weekly consolidation readiness checks.",
+      "weight": 5,
+      "confidence": "medium",
+      "source": "memory:2026-03-27"
+    },
+    {
+      "fromEntity": "Retrieval Cascade",
+      "toEntity": "Operational Blackboard",
+      "relationType": "queries",
+      "fact": "Retrieval Cascade queries Operational Blackboard at step four.",
+      "weight": 7,
+      "confidence": "high",
+      "source": "memory:2026-03-27"
+    },
+    {
+      "fromEntity": "Retrieval Cascade",
+      "toEntity": "Knowledge Graph",
+      "relationType": "queries",
+      "fact": "Retrieval Cascade queries Knowledge Graph at step five.",
+      "weight": 7,
+      "confidence": "high",
+      "source": "memory:2026-03-27"
+    },
+    {
+      "fromEntity": "Weekly Consolidation",
+      "toEntity": "Memory Platform",
+      "relationType": "improves",
+      "fact": "Weekly Consolidation improves Memory Platform quality by reducing stale context.",
+      "weight": 6,
+      "confidence": "medium",
+      "source": "memory:2026-03-23"
+    },
+    {
+      "fromEntity": "Retrieval Cascade",
+      "toEntity": "Weekly Consolidation",
+      "relationType": "depends_on",
+      "fact": "Retrieval quality depends on regular consolidation of accumulated memory logs.",
+      "weight": 8,
+      "confidence": "high",
+      "source": "memory:2026-03-27"
+    }
+  ]
+}
