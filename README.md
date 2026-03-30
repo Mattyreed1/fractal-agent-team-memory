@@ -14,6 +14,8 @@ Without memory, agents repeat mistakes, ask the same questions, and cannot build
 
 ## The Architecture (3 Layers)
 
+![Memory Architecture](./diagrams/memory-architecture.png)
+
 ### Layer 1: Working Memory
 
 All context available to the agent at session start and during execution:
@@ -35,9 +37,13 @@ Why `8KB`: small enough to inject every session without bloating tokens, large e
 
 Why weekly reset: prevents stale context buildup and forces explicit consolidation into long-term systems.
 
-### Layer 3: Long-Term Memory (shared across all agents)
+### Layer 3: Long-Term Memory (persistent, shared across all agents)
 
-Three complementary long-term stores:
+Long-term memory splits into two categories:
+
+#### Declarative — *what it knows*
+
+Three complementary stores:
 
 1. **Memory Log**
    - Dated markdown files (daily logs)
@@ -51,19 +57,13 @@ Three complementary long-term stores:
    - Structured operational data (tasks, messages, decisions, projects)
    - Retrieval: **structured queries**
 
-Why split these stores:
-- Memory Log preserves chronology and narrative detail.
-- KG preserves durable facts and relationships.
-- Database preserves operational truth in queryable structure.
+#### Procedural — *what it knows how to do*
 
-## Procedural Memory (Skills)
+Skills are markdown instruction files loaded on demand for task-specific workflows. Each agent has access to a different subset of skills based on their role.
 
-Procedural memory is separate from the 3 layers above.
-
-Skills are markdown instruction files loaded on demand for task-specific execution workflows. This is "how to do things" memory.
-
-- **3 layers** = what agents *know*
-- **Skills** = what agents *know how to do*
+- Skills are loaded only when needed — not injected into every session
+- New capabilities are added by writing new skill files, not retraining
+- The skill registry tracks which agents can use which skills
 
 ## How It Works
 
