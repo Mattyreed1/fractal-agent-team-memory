@@ -1,141 +1,125 @@
 # Agent Memory Starter Kit
 
-Give your AI agents memory that persists across sessions.
+**Convex backend for OpenClaw agent teams. 10-minute setup. Two tables. No debugging.**
 
-AI agents are strong at short-horizon reasoning but weak at continuity. Most systems restart from zero each session with no durable memory of previous decisions, learned context, or team state.
+This is the *long-term, shared* layer of memory for a multi-agent team. It sits underneath your per-agent files (`SOUL.md`, `MEMORY.md`, etc.) and gives your agents two things they can't do with files alone:
 
-This starter kit provides a production-oriented memory architecture you can fork and adapt for your own multi-agent workflows.
+- **`tasks`** — durable work coordination across agents (`open` → `claimed` → `done`).
+- **`notes`** — full-text searchable shared memory (facts, references, decisions).
 
-## The Problem
+Built for [OpenClaw](https://github.com/openclawhq/openclaw) on a Hetzner VPS, but works with any agent runtime that can shell out or hit a URL.
 
-AI agents start every session from zero. No memory of yesterday, last week's decisions, or accumulated knowledge.
+---
 
-Without memory, agents repeat mistakes, ask the same questions, and cannot build on prior work.
+## Why two tables?
 
-## The Architecture (3 Layers)
+Most agent-memory systems either ship one bloated schema (too much to learn) or skip durable shared state entirely (agents repeat work and miss each other's facts). This kit picks the two primitives a team actually needs on day 1:
 
-![Memory Architecture](./diagrams/memory-architecture.png)
+| Without this | With this |
+|---|---|
+| Agent A finishes a task, Agent B starts the same task | `tasks` table — A claimed it, B sees `status: claimed` |
+| Agent A learned a fact yesterday, Agent B re-discovers it tomorrow | `notes` table — A wrote it, B finds it via search |
 
-### Layer 1: Working Memory
+Everything else (decisions, projects, documents, KG entities) is a *tag* or a *result* on top of these two — until you need a dedicated table for it.
 
-All context available to the agent at session start and during execution:
-- Agent files (`SOUL.md`, `AGENTS.md`, `TEAM.md`, `IDENTITY.md`, etc.)
-- Blackboard state (tasks, messages, notifications)
-- Current conversation context
-- Tool outputs from the active session
+---
 
-Why: fastest access, zero retrieval latency, best for immediate reasoning and execution.
+## Quick Start (10 minutes)
 
-### Layer 2: Short-Term Memory (`MEMORY.md`)
+You need: [Node 18+](https://nodejs.org), a free [Convex account](https://convex.dev) (sign in with Google), and a terminal.
 
-A weekly rolling buffer (`<= 8KB`) that stores recent decisions, context, and unresolved questions.
+```bash
+# 1. Clone
+gh repo clone Mattyreed1/agent-memory-starter-kit my-memory
+cd my-memory
 
-Retrieval behavior:
-- Read the entire file at session start.
+# 2. Install
+npm install
 
-Why `8KB`: small enough to inject every session without bloating tokens, large enough for one week of high-signal notes.
+# 3. Deploy (opens browser to sign in, creates your Convex project)
+npx convex dev
+```
 
-Why weekly reset: prevents stale context buildup and forces explicit consolidation into long-term systems.
+That's it. After `npx convex dev` finishes, your terminal shows a URL like `https://elegant-cat-123.convex.cloud`. That's your deployment.
 
-### Layer 3: Long-Term Memory (persistent, shared across all agents)
+To deploy permanently to production (no dev watcher):
+```bash
+npx convex deploy
+```
 
-Long-term memory splits into two categories:
+---
 
-#### Declarative — *what it knows*
+## How agents use it
 
-Three complementary stores:
+Any process with the Convex URL + a deploy key can call functions. From inside an OpenClaw agent skill (or directly via shell):
 
-1. **Memory Log**
-   - Dated markdown files (daily logs)
-   - Retrieval: **semantic search** (embeddings)
+```bash
+# Post a fact to shared memory
+npx convex run notes:add \
+  '{"content":"Acme PM is Jen Hu (jen@acme.com)","tags":["acme","contacts"],"createdBy":"rfi-triager"}'
 
-2. **Knowledge Graph (KG)**
-   - Durable entities and relationships (nodes/edges)
-   - Retrieval: **graph traversal** queries
+# Search past notes
+npx convex run notes:search '{"query":"Acme"}'
 
-3. **Database**
-   - Structured operational data (tasks, messages, decisions, projects)
-   - Retrieval: **structured queries**
+# Create a task
+npx convex run tasks:create \
+  '{"title":"Review submittal for Project X","createdBy":"human"}'
 
-#### Procedural — *what it knows how to do*
+# Claim it
+npx convex run tasks:claim \
+  '{"taskId":"<id>","agentId":"submittal-reviewer"}'
 
-Skills are markdown instruction files loaded on demand for task-specific workflows. Each agent has access to a different subset of skills based on their role.
+# Complete it
+npx convex run tasks:complete \
+  '{"taskId":"<id>","result":"## Review\n\nLooks good, flagged 2 items..."}'
+```
 
-- Skills are loaded only when needed — not injected into every session
-- New capabilities are added by writing new skill files, not retraining
-- The skill registry tracks which agents can use which skills
+Or call from Claude Code, Cursor, or any tool that supports the [Convex MCP server](https://docs.convex.dev/ai/using-mcp-tools).
 
-## How It Works
+---
 
-### Write Paths
+## Where this fits
 
-1. During execution, agents append key outcomes to daily memory logs.
-2. Agents update `MEMORY.md` with high-signal weekly context.
-3. Operational events (task updates, messages, decisions, project state) write to database tables.
-4. Weekly (or early when `MEMORY.md > 8KB`), consolidate short-term context into long-term stores.
+```
+┌─────────────────────────────────────────────┐
+│  WORKING MEMORY                             │
+│  Context window at every agent wake         │
+└─────────────────────────────────────────────┘
+┌─────────────────────────────────────────────┐
+│  SHORT-TERM (per-agent files on the VPS)    │
+│  SOUL.md • AGENTS.md • MEMORY.md •          │
+│  WORKING.md  ← private to each agent        │
+│  DNA.md • TEAM.md  ← shared across agents   │
+└─────────────────────────────────────────────┘
+┌─────────────────────────────────────────────┐
+│  LONG-TERM (this kit — shared via Convex)   │
+│  tasks  ← who's doing what, with results    │
+│  notes  ← searchable team knowledge         │
+└─────────────────────────────────────────────┘
+```
 
-### Read Paths (Retrieval Cascade)
+The per-agent file conventions (SOUL, MEMORY, etc.) ship with [`fractal-ai-workshop-ea-starter`](https://github.com/Mattyreed1/fractal-ai-workshop-ea-starter) → the `openclaw-vps-setup` skill. This kit only owns the Convex layer.
 
-Agents should read in this order:
-1. Working memory already in context
-2. `MEMORY.md` weekly buffer (read full file)
-3. Memory Log via semantic search
-4. Knowledge Graph via graph traversal
-5. Database via structured queries
-6. External systems (docs/web/Notion/etc.) as last resort
+---
 
-Why this order matters: it minimizes latency and token usage while maximizing relevance before expensive or noisy retrieval.
+## Extending it (when you outgrow 2 tables)
 
-### Consolidation Cycle
+Add tables as needs grow. Common next-steps:
 
-1. Collect past-week daily memory logs + current `MEMORY.md`
-2. Extract durable facts (entities, relationships, major decisions) for KG
-3. Preserve/index memory logs for semantic retrieval
-4. Write structured operational outcomes to database where applicable
-5. Reset `MEMORY.md` to new week header
+- **`documents`** — markdown artifacts agents produce (when notes get long enough that you want versioning + a `type` field)
+- **`projects`** — when 2-3 agents become 5+ and you need explicit project ownership + collaborators
+- **`decisions`** — when you want a separate auditable trail (you can also just tag notes with `["decision"]`)
+- **Knowledge Graph (entities + relations)** — when full-text search isn't enough and you want typed relationships. At that point, consider graduating to [OB1](https://github.com/NateBJones-Projects/OB1), which has a native OpenClaw plugin and vector-backed retrieval.
 
-## Quick Start
+Production patterns to copy when you need them: the 9-table version running ~5 Molty agents in production.
 
-1. Copy this repo into your agent project.
-2. Wire schemas from [`schema/`](./schema/) into your Convex backend.
-3. Add `templates/MEMORY.md` as a required session-start injection.
-4. Add a daily memory writer that appends to `templates/memory-file.md` shape.
-5. Implement semantic retrieval for daily memory logs.
-6. Implement graph retrieval for KG entities/relations.
-7. Implement structured retrieval for operational database state.
-8. Implement the retrieval cascade in [`prompts/retrieval-cascade.md`](./prompts/retrieval-cascade.md).
-9. Schedule a weekly consolidation job using [`prompts/weekly-consolidation.md`](./prompts/weekly-consolidation.md).
-10. Enforce guardrails:
-    - Trigger early consolidation when `MEMORY.md` exceeds `8KB`
-    - Require `source`, `validFrom`, and `createdBy` for KG writes
-    - Keep operational state in structured database records, not weekly freeform text
-
-## File Reference
-
-- [`templates/MEMORY.md`](./templates/MEMORY.md): Weekly short-term memory buffer template
-- [`templates/HEARTBEAT.md`](./templates/HEARTBEAT.md): Agent heartbeat + memory consolidation protocol
-- [`templates/memory-file.md`](./templates/memory-file.md): Daily memory log template
-- [`prompts/weekly-consolidation.md`](./prompts/weekly-consolidation.md): Consolidation prompt for long-term memory targets
-- [`prompts/retrieval-cascade.md`](./prompts/retrieval-cascade.md): Canonical 6-step retrieval order
-- [`schema/kg-schema.ts`](./schema/kg-schema.ts): Convex schema for KG entities + relations
-- [`schema/blackboard-schema.ts`](./schema/blackboard-schema.ts): Convex schema for operational database/blackboard state
-- [`examples/memory-week-example.md`](./examples/memory-week-example.md): Realistic weekly memory example
-- [`examples/memory-daily-example.md`](./examples/memory-daily-example.md): Realistic daily memory log example
-- [`examples/kg-entities-example.json`](./examples/kg-entities-example.json): Sample KG payloads
-- [`diagrams/.gitkeep`](./diagrams/.gitkeep): Placeholder for future architecture diagrams
-
-## Implementation Notes
-
-- Keep memory text human-readable; keep durable facts structured.
-- Treat confidence and validity windows as first-class metadata.
-- Prefer idempotent consolidation (safe to rerun with upserts).
-- Do not store secrets in memory or KG records.
-
-## Built by Fractal AI
-
-- https://fractalai.agency
-- https://cal.com/mattyreed1/priority
+---
 
 ## License
 
-MIT. See [`LICENSE`](./LICENSE).
+MIT. See [LICENSE](./LICENSE).
+
+## Built by Fractal AI
+
+- [fractalai.agency](https://fractalai.agency)
+- [Book Matty](https://cal.com/mattyreed1/priority)
