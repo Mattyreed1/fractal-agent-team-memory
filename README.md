@@ -89,10 +89,6 @@ This repo is the standard memory companion for [`fractal-agent-team-starter`](ht
 
 Use the starter first if you want guided setup. Use this repo directly if you only need the Convex backend.
 
-## Advanced references
-
-The `schema/`, `templates/`, `prompts/`, and `examples/` folders contain the older expanded architecture notes. They are useful once the simple backend is working.
-
 ## License
 
 MIT.
