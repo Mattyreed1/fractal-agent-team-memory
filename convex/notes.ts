@@ -1,43 +1,41 @@
 import { mutation, query } from "./_generated/server";
 import { v } from "convex/values";
 
-// Append a note to shared memory. Tags help retrieval later.
 export const add = mutation({
   args: {
-    content: v.string(),
-    tags: v.array(v.string()),
+    text: v.string(),
+    tags: v.optional(v.array(v.string())),
+    source: v.optional(v.string()),
     createdBy: v.string(),
   },
-  handler: async (ctx, { content, tags, createdBy }) => {
-    return await ctx.db.insert("notes", { content, tags, createdBy });
+  handler: async (ctx, args) => {
+    return await ctx.db.insert("notes", {
+      text: args.text,
+      tags: args.tags ?? [],
+      source: args.source,
+      createdBy: args.createdBy,
+      createdAt: Date.now(),
+    });
   },
 });
 
-// Full-text search over note content. Returns top 20 matches.
-export const search = query({
-  args: { query: v.string() },
-  handler: async (ctx, { query: q }) => {
-    return await ctx.db
-      .query("notes")
-      .withSearchIndex("search_content", (b) => b.search("content", q))
-      .take(20);
-  },
-});
-
-// Get notes by tag (simple linear scan over recent notes).
-// Fine for <1000 notes; if you grow past that, add a separate index.
-export const byTag = query({
-  args: { tag: v.string() },
-  handler: async (ctx, { tag }) => {
-    const recent = await ctx.db.query("notes").order("desc").take(500);
-    return recent.filter((n) => n.tags.includes(tag));
-  },
-});
-
-// Most recent N notes regardless of content.
 export const recent = query({
   args: { limit: v.optional(v.number()) },
-  handler: async (ctx, { limit }) => {
-    return await ctx.db.query("notes").order("desc").take(limit ?? 20);
+  handler: async (ctx, args) => {
+    return await ctx.db
+      .query("notes")
+      .withIndex("by_createdAt")
+      .order("desc")
+      .take(args.limit ?? 20);
+  },
+});
+
+export const search = query({
+  args: { query: v.string(), limit: v.optional(v.number()) },
+  handler: async (ctx, args) => {
+    return await ctx.db
+      .query("notes")
+      .withSearchIndex("search_text", (q) => q.search("text", args.query))
+      .take(args.limit ?? 10);
   },
 });

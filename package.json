@@ -1,17 +1,16 @@
 {
-  "name": "agent-memory-starter-kit",
-  "version": "0.2.0",
-  "description": "Convex backend for OpenClaw agent teams — tasks + searchable shared notes. 10-minute setup.",
-  "private": true,
+  "name": "fractal-agent-team-memory",
+  "version": "1.0.0",
+  "private": false,
+  "description": "Simple Convex memory and task backend for Fractal-style agent teams.",
   "scripts": {
     "dev": "convex dev",
     "deploy": "convex deploy"
   },
   "dependencies": {
-    "convex": "^1.16.0"
+    "convex": "^1.19.4"
   },
   "devDependencies": {
-    "typescript": "^5.4.0"
-  },
-  "license": "MIT"
+    "typescript": "^5.6.3"
+  }
 }

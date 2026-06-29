@@ -1,70 +1,45 @@
 import { mutation, query } from "./_generated/server";
 import { v } from "convex/values";
 
-// Create a new task. Default status is 'open' — any agent can claim it.
 export const create = mutation({
   args: {
     title: v.string(),
+    description: v.optional(v.string()),
+    owner: v.optional(v.string()),
+    priority: v.optional(v.number()),
     createdBy: v.string(),
   },
-  handler: async (ctx, { title, createdBy }) => {
+  handler: async (ctx, args) => {
+    const now = Date.now();
     return await ctx.db.insert("tasks", {
-      title,
+      title: args.title,
+      description: args.description,
       status: "open",
-      createdBy,
+      owner: args.owner,
+      priority: args.priority ?? 3,
+      createdBy: args.createdBy,
+      createdAt: now,
+      updatedAt: now,
     });
   },
 });
 
-// Claim an open task. Errors if the task is already claimed or done.
-export const claim = mutation({
-  args: {
-    taskId: v.id("tasks"),
-    agentId: v.string(),
-  },
-  handler: async (ctx, { taskId, agentId }) => {
-    const task = await ctx.db.get(taskId);
-    if (!task) throw new Error("Task not found");
-    if (task.status !== "open") {
-      throw new Error(`Task is '${task.status}', not 'open' — cannot claim`);
-    }
-    await ctx.db.patch(taskId, {
-      status: "claimed",
-      assignedTo: agentId,
-      claimedAt: Date.now(),
-    });
-  },
-});
-
-// Mark a task done. Optionally attach a result (markdown).
-export const complete = mutation({
-  args: {
-    taskId: v.id("tasks"),
-    result: v.optional(v.string()),
-  },
-  handler: async (ctx, { taskId, result }) => {
-    await ctx.db.patch(taskId, {
-      status: "done",
-      ...(result !== undefined ? { result } : {}),
-    });
-  },
-});
-
-// List tasks, optionally filtered by status. Most recent first.
 export const list = query({
-  args: {
-    status: v.optional(v.string()),
-    limit: v.optional(v.number()),
-  },
-  handler: async (ctx, { status, limit }) => {
-    const take = limit ?? 50;
-    if (status) {
-      return await ctx.db
-        .query("tasks")
-        .withIndex("by_status", (q) => q.eq("status", status))
-        .order("desc")
-        .take(take);
+  args: { status: v.optional(v.string()), owner: v.optional(v.string()) },
+  handler: async (ctx, args) => {
+    if (args.owner) {
+      return await ctx.db.query("tasks").withIndex("by_owner", (q) => q.eq("owner", args.owner)).collect();
     }
-    return await ctx.db.query("tasks").order("desc").take(take);
+    if (args.status) {
+      return await ctx.db.query("tasks").withIndex("by_status", (q) => q.eq("status", args.status)).collect();
+    }
+    return await ctx.db.query("tasks").collect();
+  },
+});
+
+export const updateStatus = mutation({
+  args: { id: v.id("tasks"), status: v.string(), result: v.optional(v.string()) },
+  handler: async (ctx, args) => {
+    await ctx.db.patch(args.id, { status: args.status, result: args.result, updatedAt: Date.now() });
   },
 });
