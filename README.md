@@ -20,16 +20,28 @@ You need Node.js and a free Convex account.
 git clone https://github.com/Mattyreed1/fractal-agent-team-memory.git
 cd fractal-agent-team-memory
 npm install
-npx convex dev
+npx convex dev --once
 ```
 
-Convex will open a browser, ask you to log in, and create a backend.
+Convex will open a browser, ask you to log in, create a backend, push the functions once, then exit. Save the deployment URL it prints.
 
 For production:
 
 ```bash
 npx convex deploy
 ```
+
+## What to save
+
+After setup, save these in your agent project notes or `CLAUDE.md`:
+
+```text
+Convex project:
+Convex deployment URL:
+Memory backend folder: memory-backend/
+```
+
+Do **not** commit deploy keys, API keys, or `.env.local` files.
 
 ## Test it
 
@@ -84,3 +96,30 @@ The `schema/`, `templates/`, `prompts/`, and `examples/` folders contain the old
 ## License
 
 MIT.
+
+
+## Common setup issues
+
+### `npx convex dev` keeps running
+
+That is normal for Convex dev mode. For first setup, use:
+
+```bash
+npx convex dev --once
+```
+
+### Browser login does not open
+
+Copy the login URL from the terminal and paste it into your browser.
+
+### Agent cannot find memory later
+
+Make sure the agent project records:
+
+- the `memory-backend/` folder path,
+- the Convex deployment URL,
+- which functions to use: `notes:add`, `notes:search`, `tasks:create`, `tasks:list`, `agents:heartbeat`.
+
+### You are tempted to add more tables
+
+Wait. Start with notes, tasks, and agents. Add schema only after a real workflow needs it.

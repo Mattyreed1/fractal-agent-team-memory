@@ -4,11 +4,12 @@
   "private": false,
   "description": "Simple Convex memory and task backend for Fractal-style agent teams.",
   "scripts": {
-    "dev": "convex dev",
+    "dev": "convex dev --once",
+    "watch": "convex dev",
     "deploy": "convex deploy"
   },
   "dependencies": {
-    "convex": "^1.19.4"
+    "convex": "^1.42.0"
   },
   "devDependencies": {
     "typescript": "^5.6.3"
